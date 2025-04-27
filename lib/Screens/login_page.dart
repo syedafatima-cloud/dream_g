@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mobile_ap/screens/home_screen.dart';
 import 'signup.dart';
 
 class LoginPage extends StatefulWidget {
@@ -17,13 +18,15 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     [const Color.fromARGB(255, 171, 202, 255), const Color.fromARGB(255, 243, 177, 255)],
   ];
 
-  int _gradientIndex = 0;
+  int _currentGradient = 0;
+  int _nextGradient = 1;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
   late AnimationController _animationController;
+  late Animation<double> _animation;
 
   @override
   void initState() {
@@ -31,15 +34,20 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
-    )..addStatusListener((status) {
+    );
+    
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(_animationController)
+      ..addStatusListener((status) {
         if (status == AnimationStatus.completed) {
           setState(() {
-            _gradientIndex = (_gradientIndex + 1) % _gradients.length;
+            _currentGradient = _nextGradient;
+            _nextGradient = (_nextGradient + 1) % _gradients.length;
           });
           _animationController.reset();
           _animationController.forward();
         }
       });
+      
     _animationController.forward();
   }
 
@@ -68,7 +76,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             color: Colors.black87,
           )
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           obscureText: isPassword ? !_isPasswordVisible : false,
@@ -79,7 +87,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             color: Colors.black87,
           ),
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             prefixIcon: prefixIcon,
             suffixIcon: isPassword
                 ? IconButton(
@@ -94,7 +102,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                     },
                   )
                 : null,
-            // Removed filled: true and fillColor properties to make fields transparent
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.black38, width: 1.0),
@@ -132,7 +139,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       final messenger = ScaffoldMessenger.of(context);
 
       try {
-        // Attempt to sign in
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email, 
           password: password
@@ -145,8 +151,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
               backgroundColor: Colors.green,
             )
           );
-          // Navigate to home or dashboard
-          // Navigator.pushReplacementNamed(context, '/home');
+          Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const HomeScreen()),
+                                    );
         }
       } on FirebaseAuthException catch (e) {
         String errorMessage = "An error occurred. Please try again.";
@@ -182,6 +190,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             )
           );
         }
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
       } finally {
         if (mounted) {
           setState(() {
@@ -191,7 +203,38 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       }
     }
   }
-
+  Future<void> _resetPassword(String email) async {
+  try {
+    await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Password reset link sent to your email"),
+          backgroundColor: Colors.green,
+        )
+      );
+    }
+  } on FirebaseAuthException catch (e) {
+    String errorMessage = "Failed to send reset email";
+    
+    if (e.code == 'user-not-found') {
+      errorMessage = "No user found with this email";
+    } else if (e.code == 'invalid-email') {
+      errorMessage = "Invalid email address";
+    } else if (e.message != null) {
+      errorMessage = e.message!;
+    }
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+        )
+      );
+    }
+  }
+}
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -199,12 +242,15 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     
     return Scaffold(
       body: AnimatedBuilder(
-        animation: _animationController,
+        animation: _animation,
         builder: (context, child) {
           return Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: _gradients[_gradientIndex],
+                colors: [
+                  Color.lerp(_gradients[_currentGradient][0], _gradients[_nextGradient][0], _animation.value)!,
+                  Color.lerp(_gradients[_currentGradient][1], _gradients[_nextGradient][1], _animation.value)!,
+                ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -223,27 +269,27 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                     // Logo
                     SvgPicture.asset(
                       'assets/logo.svg',
-                      height: isSmallScreen ? 70 : 90,
-                      width: isSmallScreen ? 70 : 90,
+                      height: isSmallScreen ? 60 : 80,
+                      width: isSmallScreen ? 60 : 80,
                       placeholderBuilder: (context) => const SizedBox(
-                        height: 90,
-                        width: 90,
+                        height: 80,
+                        width: 80,
                         child: Center(child: CircularProgressIndicator()),
                       ),
                     ),
                     
-                    SizedBox(height: isSmallScreen ? 30 : 40),
+                    SizedBox(height: isSmallScreen ? 20 : 30),
                     
                     // Login Card
                     Container(
-                      constraints: const BoxConstraints(maxWidth: 450),
-                      padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      padding: EdgeInsets.all(isSmallScreen ? 14 : 20),
                       decoration: BoxDecoration(
                         color: Colors.white.withAlpha(90),
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            blurRadius: 10,
+                            blurRadius: 8,
                             spreadRadius: 1,
                             color: const Color.fromRGBO(0, 0, 0, 0.3),
                           ),
@@ -254,32 +300,32 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // Login Title
+                            // Login Title - smaller and not bold
                             const Text(
                               "Welcome Back",
                               style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                                fontWeight: FontWeight.normal,
                                 color: Colors.black,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             const Text(
                               "Sign in to continue",
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 14,
                                 color: Colors.black54,
                               ),
                             ),
                             
-                            const SizedBox(height: 25),
+                            const SizedBox(height: 16),
                             
                             // Email Address
                             _buildInputField(
                               "Email Address",
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              prefixIcon: const Icon(Icons.email_outlined, color: Colors.black54),
+                              prefixIcon: const Icon(Icons.email_outlined, size: 20, color: Colors.black54),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return "Email is required";
@@ -291,14 +337,14 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               },
                             ),
                             
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 14),
                             
                             // Password
                             _buildInputField(
                               "Password",
                               isPassword: true,
                               controller: _passwordController,
-                              prefixIcon: const Icon(Icons.lock_outline, color: Colors.black54),
+                              prefixIcon: const Icon(Icons.lock_outline, size: 20, color: Colors.black54),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return "Password is required";
@@ -307,18 +353,64 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               },
                             ),
                             
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             
                             // Forgot Password Link
                             Align(
                               alignment: Alignment.centerRight,
                               child: TextButton(
                                 onPressed: () {
-                                  // Navigate to forgot password page
+                                  // Show dialog to get email
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text("Reset Password"),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text("Enter your email to receive a password reset link"),
+                                          const SizedBox(height: 16),
+                                          TextFormField(
+                                            initialValue: _emailController.text,
+                                            keyboardType: TextInputType.emailAddress,
+                                            decoration: const InputDecoration(
+                                              labelText: "Email",
+                                              border: OutlineInputBorder(),
+                                            ),
+                                            onChanged: (value) {
+                                              _emailController.text = value;
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text("Cancel"),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            if (_emailController.text.isNotEmpty) {
+                                              _resetPassword(_emailController.text.trim());
+                                              Navigator.pop(context);
+                                            } else {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text("Please enter your email"),
+                                                  backgroundColor: Colors.red,
+                                                )
+                                              );
+                                            }
+                                          },
+                                          child: const Text("Send"),
+                                        ),
+                                      ],
+                                    ),
+                                  );
                                 },
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
-                                  minimumSize: const Size(50, 30),
+                                  minimumSize: const Size(50, 24),
                                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: const Text(
@@ -326,47 +418,48 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                   style: TextStyle(
                                     color: Colors.black87,
                                     fontWeight: FontWeight.w500,
+                                    fontSize: 13,
                                   ),
                                 ),
                               ),
                             ),
                             
-                            const SizedBox(height: 25),
+                            const SizedBox(height: 20),
                             
                             // Login Button
                             SizedBox(
                               width: double.infinity,
-                              height: 55,
+                              height: 50,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.black,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  elevation: 4,
+                                  elevation: 3,
                                 ),
                                 onPressed: _isLoading ? null : _handleLogin,
                                 child: _isLoading
                                     ? const SizedBox(
-                                        height: 24,
-                                        width: 24,
+                                        height: 22,
+                                        width: 22,
                                         child: CircularProgressIndicator(
                                           color: Colors.white,
-                                          strokeWidth: 3,
+                                          strokeWidth: 2.5,
                                         ),
                                       )
                                     : const Text(
                                         'Sign In',
                                         style: TextStyle(
-                                          fontSize: 18,
+                                          fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                               ),
                             ),
                             
-                            const SizedBox(height: 25),
+                            const SizedBox(height: 16),
                             
                             // Register Row
                             Row(
@@ -376,7 +469,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                   "Don't have an account? ",
                                   style: TextStyle(
                                     color: Colors.black54,
-                                    fontSize: 15,
+                                    fontSize: 14,
                                   ),
                                 ),
                                 GestureDetector(
@@ -391,7 +484,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                     style: TextStyle(
                                       color: Colors.black,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 15,
+                                      fontSize: 14,
                                       decoration: TextDecoration.underline,
                                     ),
                                   ),

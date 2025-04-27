@@ -18,6 +18,7 @@ dependencies:
   flutter_launcher_icons: ^0.14.3
   cloud_firestore: ^5.6.5
   cached_network_image: ^3.3.0
+  carousel_slider: ^5.0.0
 
 
 dev_dependencies:
@@ -35,7 +36,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/logo.svg
-    - assets/icon.png  # Ensure this file is included in assets
-    - assets/background.jpg
-    - assets/backgroundd.jpg
+    - assets/gift_banner.PNG
     
