@@ -1,4 +1,3 @@
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,10 +5,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
+  
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -17,8 +17,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   String _selectedCategory = "All";
-  final List<String> _categories = ["All", "Flowers", "Chocolates", "Books", "Gifts"];
-  
+  List<String> _categories = [];
+
+  final double _usdToPkrRate = 278.5; 
   // Gradient animation setup
   final List<List<Color>> _gradients = [
     [const Color.fromARGB(255, 250, 244, 192), const Color.fromARGB(255, 245, 187, 206)],
@@ -36,6 +37,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 void initState() {
   super.initState();
   _addSampleProducts();
+  _addCategoriesToFirestore(); // optional if already added
+  _fetchCategories(); // fetch from Firebase
 
   _animationController = AnimationController(
     duration: const Duration(seconds: 2),
@@ -61,41 +64,60 @@ void initState() {
     _animationController.dispose();
     super.dispose();
   }
-  
+  Future<void> _addCategoriesToFirestore() async {
+  final categoriesRef = FirebaseFirestore.instance.collection('categories');
+
+  final List<String> categories = ["Flowers", "Chocolates", "Books", "Gifts"]; // No "All" here
+
+  for (String category in categories) {
+    final existing = await categoriesRef.where("name", isEqualTo: category).get();
+    if (existing.docs.isEmpty) {
+      await categoriesRef.add({"name": category});
+    }
+  }
+}
+  Future<void> _fetchCategories() async {
+  final snapshot = await FirebaseFirestore.instance.collection('categories').get();
+  setState(() {
+    _categories = ["All"]; // Add "All" manually
+    _categories.addAll(snapshot.docs.map((doc) => doc['name'].toString()).toList());
+  });
+}
+
   Future<void> _addSampleProducts() async {
   final productsRef = FirebaseFirestore.instance.collection("products");
 
   await _addProductIfNotExists(productsRef, {
   "name": "Roses Bouquet",
-  "price": 49.99,
+  "price": 9.99,
   "category": "flowers",
   "rating": 4.8,
   "description": "Beautiful bouquet of fresh red roses, perfect for romantic occasions.",
-  "image": "https://images.unsplash.com/photo-1509042239860-f550ce710b93"
+  "image": "https://res.cloudinary.com/dax4erfc1/image/upload/v1746008317/roses_2_gopiwo.jpg"
 });
 
 await _addProductIfNotExists(productsRef, {
   "name": "Tulip Mix",
-  "price": 39.99,
+  "price": 8.99,
   "category": "flowers",
   "rating": 4.6,
   "description": "Colorful mix of fresh tulips in various vibrant colors, perfect for brightening any room.",
-  "image": "https://images.unsplash.com/photo-1504203700686-421f7095fddb"
+  "image": "https://res.cloudinary.com/dax4erfc1/image/upload/v1746008317/tulips_vl3x1m.jpg"
 });
 
 await _addProductIfNotExists(productsRef, {
   "name": "Luxury Truffles Box",
-  "price": 29.99,
+  "price": 5.99,
   "category": "chocolates",
   "rating": 4.9,
   "description": "Handcrafted luxury chocolate truffles in an elegant gift box. Perfect for special occasions.",
-  "image": "https://images.unsplash.com/photo-1590080877637-7f21c5411b1c",
+  "image": "https://res.cloudinary.com/dax4erfc1/image/upload/v1746008876/truffles_sf3lmq.jpg",
   "link": "https://example.com/product/luxury-truffles"
 });
 
 await _addProductIfNotExists(productsRef, {
   "name": "The Great Gatsby",
-  "price": 14.99,
+  "price": 4.99,
   "category": "books",
   "rating": 4.5,
   "description": "F. Scott Fitzgerald's classic novel depicting the Jazz Age in 1920s America.",
@@ -105,7 +127,7 @@ await _addProductIfNotExists(productsRef, {
 
 await _addProductIfNotExists(productsRef, {
   "name": "1984",
-  "price": 12.99,
+  "price": 4.99,
   "category": "books",
   "rating": 4.8,
   "description": "George Orwell's dystopian classic about the dangers of totalitarianism and mass surveillance.",
@@ -116,11 +138,11 @@ await _addProductIfNotExists(productsRef, {
 
   await _addProductIfNotExists(productsRef, {
     "name": "Gift Basket",
-    "price": 59.99,
+    "price": 14.99,
     "category": "gifts",
     "rating": 4.7,
     "description": "Elegant gift basket with assorted treats and goodies.",
-    "image": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+    "image": "https://res.cloudinary.com/dax4erfc1/image/upload/v1746008877/gift_bhigvf.png",
     "link": "https://example.com/product/gift-basket"
   });
 }
@@ -183,8 +205,8 @@ PreferredSizeWidget _buildAppBar() {
           centerTitle: true, // <-- Important to center properly
           title: SvgPicture.asset(
             'assets/logo.svg', // your SVG path
-            width: 36, // bigger size (you can adjust it, maybe 36 or 40)
-            height: 36,
+            width: 47, // bigger size (you can adjust it, maybe 36 or 40)
+            height: 47,
             placeholderBuilder: (context) => const Icon(Icons.shopping_bag),
           ),
           backgroundColor: Color.lerp(
@@ -211,90 +233,100 @@ PreferredSizeWidget _buildAppBar() {
 
 
 
-  Widget _buildBody() {
-    return RefreshIndicator(
-      onRefresh: () async {
-        setState(() {});
-        await Future.delayed(const Duration(milliseconds: 800));
-      },
-      color: const Color.fromARGB(255, 245, 204, 252),
-      child: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Banner
-          SliverToBoxAdapter(
-            child: _buildEnhancedBanner(),
-          ),
-          
-          // Categories Header
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Categories",
-                    style: TextStyle(
-                      fontSize: 20, 
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => _showAllCategories(),
-                    child: Text(
-                      "See All", 
-                      style: TextStyle(
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ),
-                ],
+      Widget _buildBody() {
+        return RefreshIndicator(
+          onRefresh: () async {
+            setState(() {});
+            await Future.delayed(const Duration(milliseconds: 800));
+          },
+          color: const Color.fromARGB(255, 245, 204, 252),
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Banner
+              SliverToBoxAdapter(
+                child: _buildEnhancedBanner(),
+              ),
+              
+              SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "Categories",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-          
-          // Category Chips
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 50,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                    child: ChoiceChip(
-                      label: Text(_categories[index]),
-                      selected: _selectedCategory == _categories[index],
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedCategory = _categories[index];
-                          }
-                        });
-                      },
-                      backgroundColor: Colors.white,
-                      selectedColor: Colors.black,
-                      labelStyle: TextStyle(
-                        color: _selectedCategory == _categories[index] 
-                            ? Colors.white 
-                            : Colors.black,
-                      ),
-                    ),
-                  );
+            TextButton(
+              onPressed: () => _showAllCategories(),
+              child: Text(
+                "See All",
+                style: TextStyle(
+                  color: Colors.grey[800],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+
+    // Category Chips without Icons
+    SliverToBoxAdapter(
+      child: SizedBox(
+        height: 50, // Reduced height since we no longer have icons
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          itemCount: _categories.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6.0),
+              child: FilterChip(
+                label: Text(_categories[index]),
+                selected: _selectedCategory == _categories[index],
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedCategory = _categories[index];
+                    }
+                  });
                 },
+                backgroundColor: Colors.grey[100],
+                selectedColor: Colors.blue[100],
+                labelStyle: TextStyle(
+                  color: Colors.black87,
+                  fontWeight: _selectedCategory == _categories[index]
+                    ? FontWeight.w500
+                    : FontWeight.normal,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: _selectedCategory == _categories[index]
+                      ? Colors.blue.withOpacity(0.3)
+                      : Colors.transparent,
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                visualDensity: VisualDensity.compact,
               ),
-            ),
-          ),
+            );
+          },
+        ),
+      ),
+    ),
           
           // Products Header
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
               child: Text(
-                "${_selectedCategory} Products",
+                "$_selectedCategory Products",
                 style: const TextStyle(
                   fontSize: 20, 
                   fontWeight: FontWeight.bold,
@@ -444,14 +476,14 @@ Widget _buildEnhancedBanner() {
               var product = products[index];
               var data = product.data() as Map<String, dynamic>;
 
-              return _buildCompactProductCard(
-                id: product.id,
-                name: data["name"] ?? "No Name",
-                price: double.tryParse(data["price"].toString()) ?? 0.0,
-                imageUrl: data["image"] ?? "",
-                rating: data["rating"] ?? 4.5,
-                productLink: data.containsKey("link") ? data["link"].toString() : "#",
-              );
+             return _buildCompactProductCard(
+              id: product.id,
+              name: data["name"] ?? "No Name",
+              price: (double.tryParse(data["price"].toString()) ?? 0.0) * _usdToPkrRate,
+              imageUrl: data["image"] ?? "",
+              rating: data["rating"] ?? 4.5,
+              productLink: data.containsKey("link") ? data["link"].toString() : "#",
+            );
             },
             childCount: products.length,
           ),
@@ -558,7 +590,7 @@ Widget _buildEnhancedBanner() {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "\$${price.toStringAsFixed(2)}",
+                      "PKR ${price.toStringAsFixed(0)}",
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
@@ -832,10 +864,11 @@ Widget _buildEnhancedBanner() {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
+      isScrollControlled: true, 
       builder: (context) {
         return Padding(
           padding: const EdgeInsets.all(20.0),
-          child: Column(
+          child: Container(child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               CircleAvatar(
@@ -867,6 +900,11 @@ Widget _buildEnhancedBanner() {
                 title: const Text("Settings"),
                 onTap: () => Navigator.pushNamed(context, '/settings'),
               ),
+              ListTile(
+                leading: const Icon(Icons.location_on_outlined),
+                title: const Text("My Addresses"),
+                onTap: () => Navigator.pushNamed(context, '/addresses'),
+              ),
               const SizedBox(height: 16),
               if (user != null)
                 ListTile(
@@ -885,32 +923,39 @@ Widget _buildEnhancedBanner() {
                 ),
             ],
           ),
+        )
         );
       },
-    );
+      );
   }
 
   void _handleLogout() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Logged out successfully"),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } catch (e) {
-      print("Error during logout: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error during logout: ${e.toString()}"),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
+  try {
+    await FirebaseAuth.instance.signOut();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Clear saved login status
+
+    Navigator.pushReplacementNamed(context, '/login'); // Go back to login page
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Logged out successfully"),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  } catch (e) {
+    print("Error during logout: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Error during logout: ${e.toString()}"),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
+}
+
 }
 
 // Product Detail Screen
@@ -1941,7 +1986,7 @@ class _CartScreenState extends State<CartScreen> {
 
 // Checkout Screen
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key});
+  const CheckoutScreen({super.key, required List cartItems, required int totalAmount});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();

@@ -51,7 +51,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
         setState(() {
           _isInWishlist = docSnapshot.exists;
         });
-        
       }
     }
   }
@@ -66,13 +65,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
     final String description = args['description'];
     final String productId = args['id'];
     
+    // Get theme colors
+    final primaryColor = Theme.of(context).primaryColor;
+    final accentColor = Theme.of(context).colorScheme.secondary;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+    final ratingColor = Theme.of(context).colorScheme.secondary;
+    
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             // App Bar
             SliverAppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: backgroundColor,
               elevation: 0,
               pinned: true,
               expandedHeight: MediaQuery.of(context).size.height * 0.4,
@@ -80,10 +86,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                 icon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: backgroundColor.withOpacity(0.9),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.arrow_back, color: Colors.black),
+                  child: Icon(Icons.arrow_back, color: textColor),
                 ),
                 onPressed: () => Navigator.pop(context),
               ),
@@ -92,12 +98,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                   icon: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      color: backgroundColor.withOpacity(0.9),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       _isInWishlist ? Icons.favorite : Icons.favorite_border,
-                      color: _isInWishlist ? Colors.red : Colors.black,
+                      color: _isInWishlist ? Colors.red : textColor,
                     ),
                   ),
                   onPressed: () => _toggleWishlist(productId),
@@ -106,10 +112,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                   icon: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      color: backgroundColor.withOpacity(0.9),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.share, color: Colors.black),
+                    child: Icon(Icons.share, color: textColor),
                   ),
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -145,10 +151,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                           fit: BoxFit.cover,
                           width: double.infinity,
                           placeholder: (context, url) => Center(
-                            child: CircularProgressIndicator(color: Colors.grey[300]),
+                            child: CircularProgressIndicator(color: Theme.of(context).disabledColor),
                           ),
                           errorWidget: (context, url, error) =>
-                              const Icon(Icons.image_not_supported, color: Colors.grey),
+                              Icon(Icons.image_not_supported, color: Theme.of(context).disabledColor),
                         );
                       }).toList(),
                     ),
@@ -169,8 +175,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: _currentImageIndex == entry.key
-                                    ? Colors.black
-                                    : Colors.white.withOpacity(0.7),
+                                    ? primaryColor
+                                    : backgroundColor.withOpacity(0.7),
                               ),
                             );
                           }).toList(),
@@ -184,9 +190,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
             // Product Details
             SliverToBoxAdapter(
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -198,26 +204,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                         Expanded(
                           child: Text(
                             name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
+                              color: textColor,
                             ),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.black,
+                            color: primaryColor,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.star, size: 16, color: Colors.amber),
+                              Icon(Icons.star, size: 16, color: ratingColor),
                               const SizedBox(width: 4),
                               Text(
                                 rating.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: backgroundColor,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -228,11 +235,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "\$${price.toStringAsFixed(2)}",
-                      style: const TextStyle(
+                      "PKR ${price.toStringAsFixed(2)}",
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -240,23 +247,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                     // Quantity Selector
                     Row(
                       children: [
-                        const Text(
+                        Text(
                           "Quantity:",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
+                            color: textColor,
                           ),
                         ),
                         const SizedBox(width: 16),
                         Container(
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
+                            border: Border.all(color: Theme.of(context).dividerColor),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.remove),
+                                icon: Icon(Icons.remove, color: textColor),
                                 onPressed: () {
                                   if (_quantity > 1) {
                                     setState(() {
@@ -268,13 +276,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                               ),
                               Text(
                                 _quantity.toString(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
+                                  color: textColor,
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.add),
+                                icon: Icon(Icons.add, color: textColor),
                                 onPressed: () {
                                   setState(() {
                                     _quantity++;
@@ -292,9 +301,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                     // TabBar for details, reviews, and similar products
                     TabBar(
                       controller: _tabController,
-                      labelColor: Colors.black,
-                      unselectedLabelColor: Colors.grey,
-                      indicatorColor: Colors.black,
+                      labelColor: primaryColor,
+                      unselectedLabelColor: Theme.of(context).disabledColor,
+                      indicatorColor: primaryColor,
                       indicatorWeight: 3,
                       tabs: const [
                         Tab(text: "Details"),
@@ -315,28 +324,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   "Product Description",
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
+                                    color: textColor,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   description,
                                   style: TextStyle(
-                                    color: Colors.grey[700],
+                                    color: Theme.of(context).textTheme.bodyMedium?.color,
                                     fontSize: 16,
                                     height: 1.5,
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                const Text(
+                                Text(
                                   "Features",
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
+                                    color: textColor,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -365,7 +376,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: backgroundColor,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -379,12 +390,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () => _addToCart(productId, _quantity),
-                icon: const Icon(Icons.shopping_cart_outlined),
-                label: const Text("Add to Cart"),
+                icon: Icon(Icons.shopping_cart_outlined, color: primaryColor),
+                label: Text("Add to Cart", style: TextStyle(color: primaryColor)),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: Colors.black),
-                  foregroundColor: Colors.black,
+                  side: BorderSide(color: primaryColor),
                 ),
               ),
             ),
@@ -395,8 +405,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                 icon: const Icon(Icons.flash_on),
                 label: const Text("Buy Now"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
+                  backgroundColor: primaryColor,
+                  foregroundColor: backgroundColor,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
@@ -408,16 +418,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
   }
   
   Widget _buildFeatureItem(IconData icon, String text) {
+    final accentColor = Theme.of(context).colorScheme.secondary;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          Icon(icon, color: Colors.green, size: 18),
+          Icon(icon, color: accentColor, size: 18),
           const SizedBox(width: 8),
           Text(
             text,
             style: TextStyle(
-              color: Colors.grey[700],
+              color: textColor,
               fontSize: 14,
             ),
           ),
@@ -427,6 +440,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
   }
   
   Widget _buildReviewsTab(String productId) {
+    final primaryColor = Theme.of(context).primaryColor;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+    final disabledColor = Theme.of(context).disabledColor;
+    
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection("products")
@@ -437,25 +455,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator(color: primaryColor));
         }
         
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.rate_review_outlined, size: 48, color: Colors.grey),
+              Icon(Icons.rate_review_outlined, size: 48, color: disabledColor),
               const SizedBox(height: 16),
               Text(
                 "No reviews yet",
-                style: TextStyle(color: Colors.grey[700], fontSize: 16),
+                style: TextStyle(color: disabledColor, fontSize: 16),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => _showAddReviewDialog(productId),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
+                  backgroundColor: primaryColor,
+                  foregroundColor: backgroundColor,
                 ),
                 child: const Text("Write a Review"),
               ),
@@ -486,8 +504,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
             ElevatedButton(
               onPressed: () => _showAddReviewDialog(productId),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
+                backgroundColor: primaryColor,
+                foregroundColor: backgroundColor,
                 minimumSize: const Size(double.infinity, 45),
               ),
               child: const Text("Write a Review"),
@@ -499,13 +517,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
   }
   
   Widget _buildReviewItem(String userName, double rating, String comment, DateTime date) {
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final cardColor = Theme.of(context).cardColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+    final subtitleColor = Theme.of(context).textTheme.bodyMedium?.color;
+    final ratingColor = Theme.of(context).colorScheme.secondary;
+    
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -515,7 +539,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
             children: [
               Text(
                 userName,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
               ),
               Row(
                 children: [
@@ -523,7 +547,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                     5,
                     (index) => Icon(
                       index < rating.round() ? Icons.star : Icons.star_border,
-                      color: Colors.amber,
+                      color: ratingColor,
                       size: 16,
                     ),
                   ),
@@ -532,11 +556,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
             ],
           ),
           const SizedBox(height: 8),
-          Text(comment),
+          Text(comment, style: TextStyle(color: textColor)),
           const SizedBox(height: 4),
           Text(
             "${date.day}/${date.month}/${date.year}",
-            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            style: TextStyle(color: subtitleColor, fontSize: 12),
           ),
         ],
       ),
@@ -544,6 +568,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
   }
   
   Widget _buildSimilarProductsTab(Map<String, dynamic> args) {
+    final primaryColor = Theme.of(context).primaryColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+    final disabledColor = Theme.of(context).disabledColor;
+    
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection("products")
@@ -553,14 +581,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator(color: primaryColor));
         }
         
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
             child: Text(
               "No similar products found",
-              style: TextStyle(color: Colors.grey[700], fontSize: 16),
+              style: TextStyle(color: disabledColor, fontSize: 16),
             ),
           );
         }
@@ -600,6 +628,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
     String description,
     String category,
   ) {
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final cardColor = Theme.of(context).cardColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+    final subtitleColor = Theme.of(context).textTheme.bodyMedium?.color;
+    final ratingColor = Theme.of(context).colorScheme.secondary;
+    final disabledColor = Theme.of(context).disabledColor;
+    
     return GestureDetector(
       onTap: () {
         Navigator.pushReplacement(
@@ -622,7 +657,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -645,15 +680,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                         fit: BoxFit.cover,
                         width: double.infinity,
                         placeholder: (context, url) => Center(
-                          child: CircularProgressIndicator(color: Colors.grey[300]),
+                          child: CircularProgressIndicator(color: disabledColor),
                         ),
                         errorWidget: (context, url, error) =>
-                            const Icon(Icons.image_not_supported, color: Colors.grey),
+                            Icon(Icons.image_not_supported, color: disabledColor),
                       )
                     : Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: Icon(Icons.image_not_supported, color: Colors.grey),
+                        color: Theme.of(context).dividerColor,
+                        child: Center(
+                          child: Icon(Icons.image_not_supported, color: disabledColor),
                         ),
                       ),
               ),
@@ -667,25 +702,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.star, size: 14, color: Colors.amber[700]),
+                      Icon(Icons.star, size: 14, color: ratingColor),
                       const SizedBox(width: 2),
                       Text(
                         rating.toString(),
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: subtitleColor),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "\$${price.toStringAsFixed(2)}",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    "PKR ${price.toStringAsFixed(2)}",
+                    style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
                   ),
                 ],
               ),
@@ -697,6 +732,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
   }
   
   void _showAddReviewDialog(String productId) {
+    final primaryColor = Theme.of(context).primaryColor;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final ratingColor = Theme.of(context).colorScheme.secondary;
     double rating = 5;
     final commentController = TextEditingController();
     
@@ -705,11 +743,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: const Text("Write a Review"),
+            title: Text("Write a Review", style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text("Rating"),
+                Text("Rating", style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -718,7 +756,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                     (index) => IconButton(
                       icon: Icon(
                         index < rating ? Icons.star : Icons.star_border,
-                        color: Colors.amber,
+                        color: ratingColor,
                       ),
                       onPressed: () {
                         setState(() {
@@ -732,9 +770,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                 TextField(
                   controller: commentController,
                   maxLines: 3,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: "Share your experience about this product...",
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    hintStyle: TextStyle(color: Theme.of(context).hintColor),
                   ),
                 ),
               ],
@@ -742,7 +781,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("Cancel"),
+                child: Text("Cancel", style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -750,7 +789,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: primaryColor,
+                  foregroundColor: backgroundColor,
                 ),
                 child: const Text("Submit"),
               ),
@@ -847,49 +887,48 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
   }
   
   void _addToCart(String productId, int quantity) async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    try {
-      print('Trying to add productId: $productId with quantity: $quantity');
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(user.uid)
-          .collection("cart")
-          .doc(productId)
-          .set({
-        'quantity': quantity,
-        'addedAt': FieldValue.serverTimestamp()
-      }, SetOptions(merge: true));
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Added $quantity item(s) to cart"),
-          duration: const Duration(seconds: 2),
-          action: SnackBarAction(
-            label: "VIEW CART",
-            onPressed: () => Navigator.pushNamed(context, '/cart'),
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        print('Trying to add productId: $productId with quantity: $quantity');
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid)
+            .collection("cart")
+            .doc(productId)
+            .set({
+          'quantity': quantity,
+          'addedAt': FieldValue.serverTimestamp()
+        }, SetOptions(merge: true));
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Added $quantity item(s) to cart"),
+            duration: const Duration(seconds: 2),
+            action: SnackBarAction(
+              label: "VIEW CART",
+              onPressed: () => Navigator.pushNamed(context, '/cart'),
+            ),
           ),
-        ),
-      );
-    } catch (error) {
-      print("Error adding to cart: $error");  // <-- this will show error now
+        );
+      } catch (error) {
+        print("Error adding to cart: $error");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Error adding to cart"),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Error adding to cart"),
+          content: Text("Please sign in to add to cart"),
           duration: Duration(seconds: 2),
         ),
       );
     }
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Please sign in to add to cart"),
-        duration: Duration(seconds: 2),
-      ),
-    );
   }
-}
-
   void _buyNow(String productId, int quantity) {
     _addToCart(productId, quantity);
     Navigator.pushNamed(context, '/checkout');

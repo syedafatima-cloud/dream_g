@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mobile_ap/screens/home_screen.dart';
 import 'signup.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Define the admin credentials
+const String adminEmail = "admin@example.com";
+const String adminPassword = "admin123";
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
-
+  
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
@@ -139,10 +143,33 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       final messenger = ScaffoldMessenger.of(context);
 
       try {
+        // Check if it's admin login
+        if (email == adminEmail && password == adminPassword) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('isAdmin', true);
+          await prefs.setBool('isLoggedIn', true);
+          
+          if (mounted) {
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text("Admin login successful!"),
+                backgroundColor: Colors.green,
+              )
+            );
+            Navigator.pushReplacementNamed(context, '/admin');
+          }
+          return;
+        }
+        
+        // Regular user login
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email, 
           password: password
         );
+        
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isAdmin', false);
+        await prefs.setBool('isLoggedIn', true);
         
         if (mounted) {
           messenger.showSnackBar(
@@ -151,10 +178,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
               backgroundColor: Colors.green,
             )
           );
-          Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(builder: (context) => const HomeScreen()),
-                                    );
+          Navigator.pushReplacementNamed(context, '/home');
         }
       } on FirebaseAuthException catch (e) {
         String errorMessage = "An error occurred. Please try again.";
@@ -190,10 +214,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             )
           );
         }
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
       } finally {
         if (mounted) {
           setState(() {
@@ -203,38 +223,40 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       }
     }
   }
+
   Future<void> _resetPassword(String email) async {
-  try {
-    await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Password reset link sent to your email"),
-          backgroundColor: Colors.green,
-        )
-      );
-    }
-  } on FirebaseAuthException catch (e) {
-    String errorMessage = "Failed to send reset email";
-    
-    if (e.code == 'user-not-found') {
-      errorMessage = "No user found with this email";
-    } else if (e.code == 'invalid-email') {
-      errorMessage = "Invalid email address";
-    } else if (e.message != null) {
-      errorMessage = e.message!;
-    }
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-        )
-      );
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Password reset link sent to your email"),
+            backgroundColor: Colors.green,
+          )
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = "Failed to send reset email";
+      
+      if (e.code == 'user-not-found') {
+        errorMessage = "No user found with this email";
+      } else if (e.code == 'invalid-email') {
+        errorMessage = "Invalid email address";
+      } else if (e.message != null) {
+        errorMessage = e.message!;
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          )
+        );
+      }
     }
   }
-}
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -272,8 +294,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                       height: isSmallScreen ? 60 : 80,
                       width: isSmallScreen ? 60 : 80,
                       placeholderBuilder: (context) => const SizedBox(
-                        height: 80,
-                        width: 80,
+                        height: 90,
+                        width: 90,
                         child: Center(child: CircularProgressIndicator()),
                       ),
                     ),
@@ -426,13 +448,12 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                             
                             const SizedBox(height: 20),
                             
-                            // Login Button
                             SizedBox(
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.black,
+                                  backgroundColor: const Color.fromARGB(255, 175, 128, 179),
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -458,7 +479,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                       ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 16),
                             
                             // Register Row

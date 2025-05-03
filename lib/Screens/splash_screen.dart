@@ -47,22 +47,23 @@ class _SplashScreenState extends State<SplashScreen> {
             // SVG Logo
             SvgPicture.asset(
               "assets/logo.svg",
-              width: 150,
+              height: 90,
+              width: 90,
             ),
             const SizedBox(height: 50),
             
             // Conditional content based on login status
             if (_isLoggedIn) ...[
               // Home Button for logged in users
-              _buildButton(context, "Go to Home", Colors.purpleAccent, const HomeScreen()),
+              _buildButton(context, "Go to Home", const Color.fromARGB(255, 174, 125, 183), const HomeScreen()),
             ] else ...[
               // Login Button
-              _buildButton(context, "Login", Colors.pinkAccent, const LoginPage()),
+              _buildButton(context, "Login", const Color.fromARGB(255, 252, 84, 140), const LoginPage()),
               
               const SizedBox(height: 15),
               
               // Register Button
-              _buildButton(context, "Register", Colors.orangeAccent, const Signup()),
+              _buildButton(context, "Register", const Color.fromARGB(255, 252, 176, 76), const Signup()),
             ],
           ],
         ),
