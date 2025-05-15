@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'signup.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -107,23 +108,23 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   )
                 : null,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(1000),
               borderSide: const BorderSide(color: Colors.black38, width: 1.0),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(1000),
               borderSide: const BorderSide(color: Colors.black38, width: 1.0),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(1000),
               borderSide: const BorderSide(color: Colors.black, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(1000),
               borderSide: const BorderSide(color: Colors.red, width: 1.5),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(1000),
               borderSide: const BorderSide(color: Colors.red, width: 1.5),
             ),
           ),
@@ -145,9 +146,53 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       try {
         // Check if it's admin login
         if (email == adminEmail && password == adminPassword) {
+          // Authenticate admin with Firebase Auth
+          try {
+            // Try to sign in with admin credentials
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
+              email: adminEmail,
+              password: adminPassword
+            );
+          } catch (e) {
+            // If admin user doesn't exist yet, create it
+            try {
+              await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                email: adminEmail,
+                password: adminPassword
+              );
+              
+              // Set admin role in Firestore
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                  .set({
+                    'role': 'admin',
+                    'email': adminEmail,
+                    'createdAt': FieldValue.serverTimestamp(),
+                  }, SetOptions(merge: true));
+            } catch (createError) {
+              // If we can't create the user (might already exist but with wrong password)
+              print('Error creating admin user: $createError');
+              // Try to sign in anyway - this will fail if the password is wrong
+              await FirebaseAuth.instance.signInWithEmailAndPassword(
+                email: adminEmail,
+                password: adminPassword
+              );
+            }
+          }
+          
+          // Store admin status in SharedPreferences
           final prefs = await SharedPreferences.getInstance();
           await prefs.setBool('isAdmin', true);
           await prefs.setBool('isLoggedIn', true);
+          
+          // Make sure the role is set correctly in Firestore
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .set({
+                'role': 'admin',
+              }, SetOptions(merge: true));
           
           if (mounted) {
             messenger.showSnackBar(
@@ -156,6 +201,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                 backgroundColor: Colors.green,
               )
             );
+            // Navigate to admin page
             Navigator.pushReplacementNamed(context, '/admin');
           }
           return;
@@ -167,19 +213,30 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           password: password
         );
         
+        // Check if user has admin role in Firestore
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(FirebaseAuth.instance.currentUser!.uid)
+            .get();
+
+        final isAdmin = userDoc.exists && userDoc.data()?['role'] == 'admin';
+
+        // Store login status and admin status in SharedPreferences
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isAdmin', false);
+        await prefs.setBool('isAdmin', isAdmin);
         await prefs.setBool('isLoggedIn', true);
-        
+
         if (mounted) {
           messenger.showSnackBar(
-            const SnackBar(
-              content: Text("Login successful!"),
+            SnackBar(
+              content: Text(isAdmin ? "Admin login successful!" : "Login successful!"),
               backgroundColor: Colors.green,
             )
           );
-          Navigator.pushReplacementNamed(context, '/home');
+          // Navigate to appropriate page based on user role
+          Navigator.pushReplacementNamed(context, isAdmin ? '/admin' : '/home');
         }
+
       } on FirebaseAuthException catch (e) {
         String errorMessage = "An error occurred. Please try again.";
         
@@ -456,8 +513,9 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                   backgroundColor: const Color.fromARGB(255, 175, 128, 179),
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(1000),
                                   ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
                                   elevation: 3,
                                 ),
                                 onPressed: _isLoading ? null : _handleLogin,

@@ -1,57 +1,52 @@
-class Product {
-  final String id;
-  String name;
-  String imageUrl;
-  String details;
-
-  // Constructor for the Product class
-  Product({
-    required this.id,
-    required this.name,
-    required this.imageUrl,
-    required this.details,
-  });
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/product.dart';
 
 class ProductService {
-  // List to store products
-  static final List<Product> _products = [];
+  static final _db = FirebaseFirestore.instance.collection('products');
 
-  // Method to add a product to the list
-  static void addProduct(Product product) {
-    _products.add(product);
+  // Add a product
+  static Future<void> addProduct(Product product) async {
+    await _db.add(product.toMap());
   }
 
-  // Method to delete a product by id
-  static bool deleteProduct(String id) {
-  int initialLength = _products.length;
-  _products.removeWhere((product) => product.id == id);
-  return _products.length < initialLength;
-}
-
-  // Method to view a product by id
-  static Product? viewProduct(String id) {
+  // Delete product by ID
+  static Future<bool> deleteProduct(String id) async {
     try {
-      return _products.firstWhere((product) => product.id == id);
-    } catch (e) {
-      return null;  // Return null if no product is found
+      await _db.doc(id).delete();
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
-  // Method to update a product's details
-  static bool updateProduct(String id, String newName, String newImageUrl, String newDetails) {
-    Product? product = viewProduct(id);
-    if (product != null) {
-      product.name = newName;
-      product.imageUrl = newImageUrl;
-      product.details = newDetails;
-      return true; // Return true if update is successful
+  // Get product by ID
+  static Future<Product?> viewProduct(String id) async {
+    try {
+      final doc = await _db.doc(id).get();
+      if (doc.exists) {
+        return Product.fromMap(doc.data()!, doc.id);
+      }
+      return null;
+    } catch (_) {
+      return null;
     }
-    return false; // Return false if no product is found to update
   }
 
-  // Method to get all products
-  static List<Product> getAllProducts() {
-    return List.unmodifiable(_products); // Returns an unmodifiable list of products
+  // Update product by ID
+  static Future<bool> updateProductById(String id, Map<String, dynamic> data) async {
+    try {
+      await _db.doc(id).update(data);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Get all products
+  static Future<List<Product>> getAllProducts() async {
+    final snapshot = await _db.get();
+    return snapshot.docs
+        .map((doc) => Product.fromMap(doc.data(), doc.id))
+        .toList();
   }
 }

@@ -11,7 +11,12 @@ class PastelTheme {
   static const Color textSecondary = Color(0xFF7A8999); // Medium blue-gray
   static const Color success = Color(0xFFABD8C6); // Mint green
   static const Color error = Color(0xFFFFADAD); // Soft red
-  static const Color inputBackground = Color(0x25AAAAAA); // Transparent greyish
+  static const Color inputBackground = Color(0x25AAAAAA);
+  // Light shadow color for cards
+  static const Color cardShadow = Color(0x15AAAAAA); // Very light transparent shadow
+
+  // Transparent greyish divider color
+  static const Color divider = Color(0x25AAAAAA); // Transparent greyish
 
   // Create a ThemeData instance using the pastel colors
   static ThemeData get theme => ThemeData(
@@ -33,9 +38,9 @@ class PastelTheme {
         cardColor: cardColor,
         
         // Text themes with Nunito Sans font
-        textTheme: GoogleFonts.nunitoSansTextTheme(
+        textTheme: GoogleFonts.interTextTheme(
           TextTheme(
-            displayLarge: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
+            displayLarge: TextStyle(color: const Color.fromARGB(255, 24, 31, 37), fontWeight: FontWeight.w700),
             displayMedium: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
             displaySmall: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
             headlineLarge: TextStyle(color: textPrimary, fontWeight: FontWeight.w700),
@@ -104,7 +109,7 @@ class PastelTheme {
           backgroundColor: background,
           elevation: 0,
           iconTheme: IconThemeData(color: textPrimary),
-          titleTextStyle: GoogleFonts.nunitoSans(
+          titleTextStyle: GoogleFonts.inter(
             color: textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -116,21 +121,22 @@ class PastelTheme {
           labelColor: primary,
           unselectedLabelColor: textSecondary,
           indicatorColor: primary,
-          labelStyle: GoogleFonts.nunitoSans(
+          labelStyle: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
           ),
-          unselectedLabelStyle: GoogleFonts.nunitoSans(
+          unselectedLabelStyle: GoogleFonts.inter(
             fontWeight: FontWeight.w400,
           ),
         ),
         
-        // Card theme
+        // Card theme with light shadow
         cardTheme: CardTheme(
           color: cardColor,
           elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
+          shadowColor: cardShadow, // Using the very light shadow color
         ),
         
         // Floating action button theme
@@ -147,6 +153,13 @@ class PastelTheme {
           buttonColor: primary,
           textTheme: ButtonTextTheme.primary,
         ),
+        
+        // Add divider theme to match the overall aesthetic
+        dividerTheme: DividerThemeData(
+          color: divider,
+          thickness: 1.0,
+          space: 16.0,
+        ),
 
         // Remove focus highlight color that can create black borders
         focusColor: Colors.transparent,
@@ -155,24 +168,3 @@ class PastelTheme {
         splashColor: primary.withOpacity(0.1),
       );
 }
-
-// Example of how to update your main.dart file to use the theme:
-/*
-import 'package:flutter/material.dart';
-import 'theme/pastel_theme.dart';
-
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Your App Name',
-      theme: PastelTheme.theme,
-      home: YourHomeScreen(),
-    );
-  }
-}
-*/

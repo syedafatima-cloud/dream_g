@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BatchUpdatePage extends StatefulWidget {
   const BatchUpdatePage({super.key});
@@ -8,11 +9,7 @@ class BatchUpdatePage extends StatefulWidget {
 }
 
 class _BatchUpdatePageState extends State<BatchUpdatePage> {
-  final List<Map<String, dynamic>> _products = [
-    {'name': 'Product 1', 'price': 100},
-    {'name': 'Product 2', 'price': 200},
-  ];
-
+  // Show dialog to add a new product
   void _showAddProductDialog() {
     final formKey = GlobalKey<FormState>();
     final TextEditingController nameController = TextEditingController();
@@ -21,7 +18,7 @@ class _BatchUpdatePageState extends State<BatchUpdatePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Add New Product'),
+        title: const Text('Add New Product'),
         content: Form(
           key: formKey,
           child: Column(
@@ -29,32 +26,52 @@ class _BatchUpdatePageState extends State<BatchUpdatePage> {
             children: [
               TextFormField(
                 controller: nameController,
-                decoration: InputDecoration(labelText: 'Product Name'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter product name' : null,
+                decoration: const InputDecoration(labelText: 'Product Name'),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter product name' : null,
               ),
               TextFormField(
                 controller: priceController,
-                decoration: InputDecoration(labelText: 'Price'),
+                decoration: const InputDecoration(labelText: 'Price'),
                 keyboardType: TextInputType.number,
-                validator: (value) => value == null || value.isEmpty ? 'Enter price' : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Enter price';
+                  }
+                  final parsedPrice = double.tryParse(value);
+                  if (parsedPrice == null || parsedPrice <= 0) {
+                    return 'Enter a valid price';
+                  }
+                  return null;
+                },
               ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               if (formKey.currentState!.validate()) {
-                setState(() {
-                  _products.add({
+                try {
+                  await FirebaseFirestore.instance.collection('products').add({
                     'name': nameController.text,
-                    'price': int.tryParse(priceController.text) ?? 0,
+                    'price': double.tryParse(priceController.text) ?? 0.0,
+                    'createdAt': FieldValue.serverTimestamp(),
                   });
-                });
-                Navigator.pop(context);
+                  // Close the dialog after adding the product
+                  Navigator.pop(context);
+                  // Clear text fields
+                  nameController.clear();
+                  priceController.clear();
+                } catch (e) {
+                  // Show error message if there's an issue adding the product
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Failed to add product')),
+                  );
+                }
               }
             },
-            child: Text('Add'),
+            child: const Text('Add'),
           ),
         ],
       ),
@@ -64,17 +81,40 @@ class _BatchUpdatePageState extends State<BatchUpdatePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Batch Update Products')),
-      body: ListView.builder(
-        itemCount: _products.length,
-        itemBuilder: (context, index) => ListTile(
-          title: Text(_products[index]['name']),
-          subtitle: Text('Price: \$${_products[index]['price']}'),
-        ),
+      appBar: AppBar(title: const Text('Batch Update Products')),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('products')
+            .orderBy('createdAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final docs = snapshot.data!.docs;
+          if (docs.isEmpty) {
+            return const Center(child: Text('No products available'));
+          }
+
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final product = docs[index].data() as Map<String, dynamic>;
+              final name = product['name'] ?? 'Unnamed';
+              final price = product.containsKey('price') ? product['price'] : 0;
+
+              return ListTile(
+                title: Text(name),
+                subtitle: Text('Price: \$${price.toString()}'),
+              );
+            },
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddProductDialog,
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
  import 'package:flutter/services.dart';
  import 'dart:math';
+
+import 'package:mobile_ap/pastel_theme.dart';
  
  class PromoCodesPage extends StatefulWidget {
    const PromoCodesPage({super.key});
@@ -238,8 +240,8 @@ import 'package:flutter/material.dart';
                                  onPressed: _addPromoCode,
                                  style: ElevatedButton.styleFrom(
                                    padding: const EdgeInsets.symmetric(vertical: 15),
-                                   backgroundColor: Colors.orange,
-                                   foregroundColor: Colors.white,
+                                    backgroundColor: PastelTheme.primary,
+                                    foregroundColor: PastelTheme.cardColor,
                                  ),
                                  child: const Text('Add Promo Code'),
                                ),
@@ -307,8 +309,8 @@ import 'package:flutter/material.dart';
                },
                style: ElevatedButton.styleFrom(
                  padding: const EdgeInsets.symmetric(vertical: 15),
-                 backgroundColor: Colors.blue,
-                 foregroundColor: Colors.white,
+                 backgroundColor: PastelTheme.primary,
+                 foregroundColor: PastelTheme.cardColor,
                ),
                child: const Text('Save All Promo Codes'),
              ),

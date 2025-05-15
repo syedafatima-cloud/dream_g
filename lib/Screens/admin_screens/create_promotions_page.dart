@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_ap/screens/addresses_screen.dart';
  
  class CreatePromotionsPage extends StatelessWidget {
    const CreatePromotionsPage({super.key});
@@ -39,28 +40,28 @@ import 'package:flutter/material.dart';
                      'Discount',
                      Icons.discount,
                      '/discount',
-                     Colors.purple,
+                     PastelTheme.primary,
                    ),
                    _buildPromotionTypeButton(
                      context,
                      'Free Shipping',
                      Icons.local_shipping,
                      '/freeShipping',
-                     Colors.green,
+                     PastelTheme.primary,
                    ),
                    _buildPromotionTypeButton(
                      context,
                      'Promo Codes',
                      Icons.confirmation_number,
                      '/promoCodes',
-                     Colors.orange,
+                     PastelTheme.primary,
                    ),
                    _buildPromotionTypeButton(
                      context,
                      'Validity Period',
                      Icons.timer,
                      '/validityPeriod',
-                     Colors.blue,
+                     PastelTheme.primary,
                    ),
                  ],
                ),

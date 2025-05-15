@@ -1,15 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+// Import your pastel theme
 
 class OptionsPage extends StatelessWidget {
   const OptionsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Access theme colors
+    final theme = Theme.of(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Options Management'),
         centerTitle: true,
+        actions: [
+          // Add change password icon to app bar corner
+          IconButton(
+            icon: const Icon(Icons.lock_reset),
+            tooltip: 'Change Password',
+            onPressed: () {
+              Navigator.pushNamed(context, '/changePassword');
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -18,14 +32,14 @@ class OptionsPage extends StatelessWidget {
             SvgPicture.asset(
               'assets/logo.svg',
               height: 90,
-              width: 90, // or any size you want
+              width: 90,
             ),
             const SizedBox(height: 20),
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
                 children: [
                   _buildOptionButton(context, 'Manage Products', '/manageProducts'),
                   _buildOptionButton(context, 'View Orders', '/viewOrders'),
@@ -36,16 +50,7 @@ class OptionsPage extends StatelessWidget {
                 ],
               ),
             ),
-            ElevatedButton.icon(
-              onPressed: () {
-                // Navigate to Change Password screen if needed
-              },
-              icon: const Icon(Icons.lock_reset),
-              label: const Text('Change Password'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-              ),
-            ),
+            // Removed the Change Password button from here
           ],
         ),
       ),
@@ -53,16 +58,19 @@ class OptionsPage extends StatelessWidget {
   }
 
   Widget _buildOptionButton(BuildContext context, String title, String routeName) {
+    // Using the pastel theme's primary color (soft purple) instead of blue
     return ElevatedButton(
       onPressed: () => Navigator.pushNamed(context, routeName),
+      // The button style is now defined in the theme, but we can add custom styling here
       style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        backgroundColor: Colors.blue.shade600,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        textStyle: const TextStyle(fontSize: 14),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      child: Text(title, textAlign: TextAlign.center),
+      child: Text(
+        title, 
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
     );
   }
 }

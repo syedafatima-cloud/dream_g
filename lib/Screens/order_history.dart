@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mobile_ap/pastel_theme.dart';
+import 'package:mobile_ap/screens/order_tracking_screen.dart';
 
 class OrderHistoryScreen extends StatelessWidget {
   const OrderHistoryScreen({super.key});
@@ -18,7 +20,7 @@ class OrderHistoryScreen extends StatelessWidget {
           },
         ),
         title: const Text("Order History"),
-        backgroundColor: const Color.fromARGB(255, 174, 125, 183),
+        backgroundColor: PastelTheme.primary,
         centerTitle: true,
       ),
       body: user == null
@@ -72,12 +74,35 @@ class OrderHistoryScreen extends StatelessWidget {
                             ...List.generate(items.length, (i) {
                               return Text("- ${items[i]['name']} x${items[i]['quantity']}");
                             }),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => OrderTrackingScreen(
+                                      orderId: orderId,
+                                      userId: user.uid,
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: PastelTheme.primary,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(1000),
+                                ),
+                              ),
+                              child: const Text("Track Order", style: TextStyle(color: Colors.white)),
+                            ),
                           ],
                         ),
                       ),
                     );
+                    
                   },
-                );
+                );  
               },
             ),
     );

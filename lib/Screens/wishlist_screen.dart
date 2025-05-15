@@ -40,7 +40,7 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
           "My Wishlist", 
           style: TextStyle(
             fontWeight: FontWeight.bold, 
-            fontSize: 22,
+            fontSize: 20,
             color: PastelTheme.accent,
             letterSpacing: 0.5,
           ),
@@ -182,23 +182,22 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
 
   // Helper method to get product price from Firebase data
   double _getProductPrice(Map<String, dynamic> productData) {
-     const double usdToPkrRate = 278.93; // Example rate as of May 2025
+    // Price is already in PKR, no conversion needed
+    double pricePkr = 0.0;
     
-    double priceInUsd = 0.0;
-   // Check if price exists directly in the product data
+    // Check if price exists directly in the product data
     if (productData.containsKey("price")) {
-      priceInUsd = double.tryParse(productData["price"].toString()) ?? 0.0;
+      pricePkr = double.tryParse(productData["price"].toString()) ?? 0.0;
     }
     // Check if there's a prices map with current price
     else if (productData.containsKey("prices") && productData["prices"] is Map) {
       final pricesMap = productData["prices"] as Map;
       if (pricesMap.containsKey("current")) {
-        priceInUsd = double.tryParse(pricesMap["current"].toString()) ?? 0.0;
+        pricePkr = double.tryParse(pricesMap["current"].toString()) ?? 0.0;
       }
     }
     
-    // Convert USD to PKR
-    return priceInUsd * usdToPkrRate;
+    return pricePkr;
   }
 
   Widget _buildWishlistItem(
@@ -330,8 +329,7 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
                           // Changed from $ to PKR
                           "PKR ${price.toStringAsFixed(2)}",
                           style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 18,
+                            fontSize: 12,
                             color: PastelTheme.accent,
                           ),
                         ),
@@ -346,7 +344,7 @@ class _WishlistScreenState extends State<WishlistScreen> with SingleTickerProvid
                                   foregroundColor: Colors.white,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(1000),
                                   ),
                                   padding: const EdgeInsets.symmetric(vertical: 10),
                                 ),

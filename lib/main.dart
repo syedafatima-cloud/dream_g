@@ -8,20 +8,22 @@ import 'package:mobile_ap/screens/admin_screens/batch_update_products_page.dart'
 import 'package:mobile_ap/screens/admin_screens/delete_archive_products_page.dart';
 import 'package:mobile_ap/screens/admin_screens/delete_product_page.dart';
 import 'package:mobile_ap/screens/admin_screens/manage_categories_page.dart';
-import 'package:mobile_ap/screens/admin_screens/manage_inventory_page';
+import 'package:mobile_ap/screens/admin_screens/manage_inventory_page.dart';
 import 'package:mobile_ap/screens/admin_screens/options_page.dart';
 import 'package:mobile_ap/screens/admin_screens/track_inventory_history_page.dart';
 import 'package:mobile_ap/screens/admin_screens/update_products_page.dart';
 import 'package:mobile_ap/screens/admin_screens/view_orders_page.dart';
 import 'package:mobile_ap/screens/admin_screens/view_product_page.dart';
+import 'package:mobile_ap/screens/admin_screens/forget_password_page.dart';
 import 'package:mobile_ap/screens/checkout_screen.dart' hide PastelTheme;
 import 'package:mobile_ap/screens/order_history.dart';
 import 'package:mobile_ap/screens/settings_screen.dart';
 import 'package:mobile_ap/screens/splash_screen.dart';
+import 'package:mobile_ap/screens/change_password_screen.dart';
 import 'package:mobile_ap/screens/home_screen.dart' as home; 
 import 'package:mobile_ap/screens/product_detail.dart' as detail; 
 import 'package:mobile_ap/screens/login_page.dart';
-import 'package:mobile_ap/screens/wishlist_screen.dart' hide PastelTheme;
+import 'package:mobile_ap/screens/wishlist_screen.dart';
 import 'package:mobile_ap/screens/cart_screen.dart' as cart; 
 import 'package:mobile_ap/screens/admin_screens/manage_products.dart'; 
 import 'package:mobile_ap/screens/admin_screens/create_promotions_page.dart';
@@ -49,6 +51,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      
       theme: PastelTheme.theme,
       debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
@@ -59,7 +62,7 @@ class MyApp extends StatelessWidget {
         '/cart': (context) => cart.CartScreen(),  
         '/wishlist': (context) => const WishlistScreen(),
         '/orders': (context) => const OrderHistoryScreen(),
-        '/checkout': (context) => CheckoutScreen(cartItems: [], totalAmount: 0, currency: '0', exchangeRate: 0,),
+        '/checkout': (context) => CheckoutScreen(cartItems: [], totalAmount: 0, currency: 'PKR'),
         '/settings' : (context) => SettingsScreen(),
         '/profile' : (context) => ProfileScreen(),
         '/help' : (context) => HelpScreen(),
@@ -80,6 +83,8 @@ class MyApp extends StatelessWidget {
         '/promoCodes': (context) => const PromoCodesPage(),
         '/generatereports': (context) => const GenerateReportsPage(),  // Add this line
         '/customerreviews': (context) => const CustomerReviewsPage(),  // 
+        '/forgetPassword': (context) => const ForgotPasswordPage(),
+        '/changePassword': (context) => const ChangePasswordScreen(),
 
         '/addProduct': (context) => AddProductPage(),
         '/deleteProduct': (context) => DeleteProductPage(),

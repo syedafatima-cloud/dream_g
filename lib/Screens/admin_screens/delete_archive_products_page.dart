@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DeleteArchivedProductsPage extends StatefulWidget {
   const DeleteArchivedProductsPage({super.key});
@@ -8,31 +9,27 @@ class DeleteArchivedProductsPage extends StatefulWidget {
 }
 
 class _DeleteArchivedProductsPageState extends State<DeleteArchivedProductsPage> {
-  final List<String> _archivedProducts = ['Old Laptop', 'Vintage Camera', 'Expired Milk'];
-
   void _showSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
   }
 
-  void _confirmDeleteArchived(int index) {
+  void _confirmDeleteArchived(String docId, String name) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Archived Product'),
-        content: Text('Delete "${_archivedProducts[index]}"?'),
+        title: const Text('Delete Archived Product'),
+        content: Text('Delete "$name"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _archivedProducts.removeAt(index);
-              });
+            onPressed: () async {
+              await FirebaseFirestore.instance.collection('products').doc(docId).delete();
               Navigator.pop(context);
               _showSnackbar('Archived product deleted successfully!');
             },
-            child: Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -42,16 +39,35 @@ class _DeleteArchivedProductsPageState extends State<DeleteArchivedProductsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Delete Archived Products')),
-      body: ListView.builder(
-        itemCount: _archivedProducts.length,
-        itemBuilder: (context, index) => ListTile(
-          title: Text(_archivedProducts[index]),
-          trailing: IconButton(
-            icon: Icon(Icons.delete_forever),
-            onPressed: () => _confirmDeleteArchived(index),
-          ),
-        ),
+      appBar: AppBar(title: const Text('Delete Archived Products')),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('products')
+            .where('isArchived', isEqualTo: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+          final docs = snapshot.data!.docs;
+
+          if (docs.isEmpty) return const Center(child: Text('No archived products'));
+
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index];
+              final name = doc['name'] ?? 'Unnamed';
+
+              return ListTile(
+                title: Text(name),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_forever),
+                  onPressed: () => _confirmDeleteArchived(doc.id, name),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

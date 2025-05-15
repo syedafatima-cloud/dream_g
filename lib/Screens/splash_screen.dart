@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
               _buildButton(context, "Go to Home", const Color.fromARGB(255, 174, 125, 183), const HomeScreen()),
             ] else ...[
               // Login Button
-              _buildButton(context, "Login", const Color.fromARGB(255, 252, 84, 140), const LoginPage()),
+              _buildButton(context, "Login", const Color.fromARGB(255, 251, 100, 150), const LoginPage()),
               
               const SizedBox(height: 15),
               
@@ -73,14 +73,15 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Widget _buildButton(BuildContext context, String text, Color color, Widget page) {
     return SizedBox(
-      width: 250, // Fixed width for consistency
-      height: 50,  // Fixed height for better look
+      width: 200, 
+      height: 50,// Reduced width from 250 to 200
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(1000),
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10), // Reduced vertical padding
         ),
         onPressed: () {
           Navigator.push(
@@ -90,7 +91,7 @@ class _SplashScreenState extends State<SplashScreen> {
         },
         child: Text(
           text,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
     );

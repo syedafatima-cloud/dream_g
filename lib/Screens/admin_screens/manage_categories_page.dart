@@ -116,8 +116,9 @@ class _ManageCategoriesPageState extends State<ManageCategoriesPage> {
         stream: categoriesRef.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) return Center(child: Text('Error loading categories'));
-          if (snapshot.connectionState == ConnectionState.waiting)
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
+          }
 
           final docs = snapshot.data!.docs;
 

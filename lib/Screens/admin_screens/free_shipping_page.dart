@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_ap/pastel_theme.dart';
  
  class FreeShippingPage extends StatefulWidget {
    const FreeShippingPage({super.key});
@@ -206,8 +207,8 @@ import 'package:flutter/material.dart';
                  },
                  style: ElevatedButton.styleFrom(
                    padding: const EdgeInsets.symmetric(vertical: 15),
-                   backgroundColor: Colors.green,
-                   foregroundColor: Colors.white,
+                   backgroundColor: PastelTheme.primary,
+                   foregroundColor: PastelTheme.cardColor,
                  ),
                  child: const Text('Save Free Shipping Promotion'),
                ),

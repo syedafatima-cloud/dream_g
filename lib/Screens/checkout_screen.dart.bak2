@@ -1,0 +1,391 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:mobile_ap/screens/order_tracking_screen.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// Modern pastel theme colors
+class PastelTheme {
+  static const Color primary = Color.fromARGB(255, 197, 157, 216); // Soft purple
+  static const Color secondary = Color(0xFFFFC8DD); // Soft pink
+  static const Color accent = Color.fromARGB(255, 75, 77, 68); // Dark accent
+  static const Color background = Color(0xFFF9F5F6); // Light background
+  static const Color cardColor = Color(0xFFFFFFFF); // White
+  static const Color cardShadow = Color(0x0D000000); // Light shadow
+  static const Color textPrimary = Color(0xFF445566); // Darker blue-gray
+  static const Color textSecondary = Color(0xFF7A8999); // Medium blue-gray
+  static const Color success = Color(0xFFABD8C6); // Mint green
+  static const Color error = Color(0xFFFFADAD); // Soft red
+  static const Color divider = Color(0xFFEEEEEE); // Light divider
+}
+
+class CheckoutScreen extends StatefulWidget {
+  final List<Map<String, dynamic>> cartItems;
+  final double totalAmount;
+  final String currency;         
+
+  const CheckoutScreen({
+    super.key,
+    required this.cartItems,
+    required this.totalAmount,
+    required this.currency,      
+  });
+
+  @override
+  State<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class CheckoutSectionTitle extends StatelessWidget {
+  final String title;
+  
+  const CheckoutSectionTitle({super.key, required this.title});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Text(
+        title,
+        style: GoogleFonts.nunitoSans(
+          fontSize: 15, 
+          fontWeight: FontWeight.w600,
+          color: PastelTheme.textPrimary,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+}
+
+class _CheckoutScreenState extends State<CheckoutScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _messageLinkController = TextEditingController();
+  final TextEditingController _discountCodeController = TextEditingController();
+  final TextEditingController _cardMessageController = TextEditingController();
+
+  String? _generatedQRData;
+  String? _selectedPaymentMethod;
+  bool _sameDayDelivery = false;
+  bool _isDiscountApplied = false;
+  double _discountAmount = 0.0;
+
+  final TextEditingController _cityController = TextEditingController();
+  String? _selectedCity;
+
+  // List of Pakistani cities for dropdown
+  final List<String> _pakistaniCities = [
+    'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 
+    'Multan', 'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala',
+    'Hyderabad', 'Abbottabad', 'Bahawalpur', 'Sargodha', 'Sukkur',
+    'Larkana', 'Sheikhupura', 'Rahim Yar Khan', 'Jhang', 'Gujrat'
+  ];
+  // Define costs
+  final double _sameDayDeliveryCost = 500;
+  
+  // Price is already in PKR, no conversion needed
+
+  void _applyDiscount() {
+    String code = _discountCodeController.text.trim();
+    if (code.isNotEmpty) {
+      // For this example, we'll accept any code and give 10% off
+      setState(() {
+        _discountAmount = widget.totalAmount * 0.1; // 10% discount
+        _isDiscountApplied = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Discount applied successfully!",
+            style: GoogleFonts.nunitoSans(fontWeight: FontWeight.w500),
+          ),
+          backgroundColor: PastelTheme.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        ),
+      );
+    }
+  }
+
+  double get _finalTotal {
+    double total = widget.totalAmount;
+    if (_sameDayDelivery) {
+      total += _sameDayDeliveryCost;
+    }
+    if (_isDiscountApplied) {
+      total -= _discountAmount;
+    }
+    return total;
+  }
+
+  void _placeOrder() async {
+    if (_formKey.currentState!.validate() && _selectedPaymentMethod != null) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "User not logged in!",
+                style: GoogleFonts.nunitoSans(fontWeight: FontWeight.w500),
+              ),
+              backgroundColor: PastelTheme.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+          );
+          return;
+        }
+
+        // Create address data
+        final addressData = {
+          'name': _nameController.text,
+          'address': _addressController.text,
+          'city': _selectedCity,
+          'phone': _phoneController.text,
+        };
+
+        // Save address for future use
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('addresses')
+            .add(addressData);
+
+        final orderRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('orders')
+            .doc(); // Create order ID
+
+        final orderData = {
+          'orderId': orderRef.id,
+          'orderDate': Timestamp.now(),
+          'total': _finalTotal,
+          'currency': widget.currency,
+          'paymentMethod': _selectedPaymentMethod,
+          'shippingAddress': addressData,
+          'items': widget.cartItems,
+          'sameDayDelivery': _sameDayDelivery,
+          'discountApplied': _isDiscountApplied,
+          'discountAmount': _discountAmount,
+          'specialMessage': _messageLinkController.text,
+          'status': 'pending',
+        };
+
+        await orderRef.set(orderData);
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OrderTrackingScreen(orderId: orderRef.id, userId: user.uid),
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Failed to place order. Please try again.",
+              style: GoogleFonts.nunitoSans(fontWeight: FontWeight.w500),
+            ),
+            backgroundColor: PastelTheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          ),
+        );
+      }
+    } else if (_selectedPaymentMethod == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Please select a payment method!",
+            style: GoogleFonts.nunitoSans(fontWeight: FontWeight.w500),
+          ),
+          backgroundColor: PastelTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        ),
+      );
+    }
+  }
+
+  // Modern input decoration with shorter height
+  InputDecoration _getInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.nunitoSans(
+        color: PastelTheme.textSecondary,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: PastelTheme.divider, width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: PastelTheme.primary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: PastelTheme.error, width: 1),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: PastelTheme.error, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      isDense: true, // Makes the field more compact
+    );
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = GoogleFonts.nunitoSansTextTheme();
+    
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: textTheme,
+        primaryTextTheme: textTheme,
+      ),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            "Checkout",
+            style: GoogleFonts.nunitoSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: PastelTheme.primary,
+          elevation: 0,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+          ),
+        ),
+        backgroundColor: PastelTheme.background,
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Main content with padding
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Shipping Details Card
+                      Container(
+                        decoration: BoxDecoration(
+                          color: PastelTheme.cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: PastelTheme.cardShadow,
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Section header
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: PastelTheme.primary.withOpacity(0.1),
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.local_shipping_outlined, size: 18, color: PastelTheme.primary),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "Shipping Details",
+                                    style: GoogleFonts.nunitoSans(
+                                      fontSize: 16, 
+                                      fontWeight: FontWeight.w600,
+                                      color: PastelTheme.textPrimary,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Form fields
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  TextFormField(
+                                    controller: _nameController,
+                                    decoration: _getInputDecoration("Full Name"),
+                                    style: GoogleFonts.nunitoSans(
+                                      color: PastelTheme.textPrimary,
+                                      fontSize: 14,
+                                    ),
+                                    validator: (value) => value!.isEmpty ? "Please enter your name" : null,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextFormField(
+                                    controller: _addressController,
+                                    decoration: _getInputDecoration("Address"),
+                                    style: GoogleFonts.nunitoSans(
+                                      color: PastelTheme.textPrimary,
+                                      fontSize: 14,
+                                    ),
+                                    validator: (value) => value!.isEmpty ? "Please enter your address" : null,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  DropdownButtonFormField<String>(
+                                    decoration: _getInputDecoration("City"),
+                                    value: _selectedCity,
+                                    dropdownColor: Colors.white,
+                                    icon: Icon(Icons.arrow_drop_down, color: PastelTheme.primary),
+                                    style: GoogleFonts.nunitoSans(
+                                      color: PastelTheme.textPrimary,
+                                      fontSize: 14,
+                                    ),
+                                    items: _pakistaniCities.map((city) {
+                                      return DropdownMenuItem<String>(
+                                        value: city,
+                                        child: Text(city),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _selectedCity = value;
+                                      });
+                                    },
+                                    validator: (value) => value == null ? "Please select a city" : null,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  
+                                  TextFormField(
+                                    controller: _phoneController,
+                                    keyboardType: TextInputType.phone,
+                                    decoration: _getInputDecoration("Phone Number"),
+                                    style: GoogleFonts.nunitoSans(
+                                      color: PastelTheme.textPrimary,
+                                      fontSize: 14,
+                                    ),
+                                    validator: (value) => value!.isEmpty ? "Please enter your phone number" : null,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
